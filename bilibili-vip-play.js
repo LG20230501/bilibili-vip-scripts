@@ -1,8 +1,11 @@
-// Bilibili VIP - PlayViewUnite 换 key (通用版)
-// key 不写死在文件里, 由 Surge 模块规则的 argument= 传入, 脚本里用 $argument 读取
-// 作用: 把播放请求的 authorization 头里的 access_key 换成会员号的 key,
-// 让没开会员的号也能拿到大会员的播放地址和画质
-const VIP_ACCESS_KEY = (typeof $argument === 'string' ? $argument : '').trim();
+// Bilibili VIP - PlayViewUnite 身份替换 (通用版)
+// argument 格式: key|mid|buvid, 由模块的 argument= 传入, 脚本里用 $argument 读取
+// 只换 authorization 里的 key 不够, 服务器还会认 x-bili-mid 和 buvid,
+// 三个都换成会员号的, 服务器才认这是大会员账号
+const parts = (typeof $argument === 'string' ? $argument : '').split('|');
+const VIP_ACCESS_KEY = (parts[0] || '').trim();
+const VIP_MID = (parts[1] || '').trim();
+const VIP_BUVID = (parts[2] || '').trim();
 const headers = $request.headers;
 const auth = headers['authorization'] || headers['Authorization'];
 if (auth && VIP_ACCESS_KEY) {
@@ -13,5 +16,11 @@ if (auth && VIP_ACCESS_KEY) {
     headers['authorization'] = 'identify_v1 ' + VIP_ACCESS_KEY;
   }
   delete headers['Authorization'];
+}
+if (VIP_MID) {
+  headers['x-bili-mid'] = VIP_MID;
+}
+if (VIP_BUVID) {
+  headers['buvid'] = VIP_BUVID;
 }
 $done({ headers: headers });
